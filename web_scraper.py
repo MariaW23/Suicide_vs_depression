@@ -27,17 +27,16 @@ def reddit_scrape(url, number_of_scrapes) -> list:
         
         if res.status_code == 200:
             json = res.json()
-            # add actual posts into the list
+            # add posts into the list
             output_list.extend(json["data"]["children"])
             after = json["data"]["after"]
-            print(after)
 
         else:
             print(res.status_code)
             break
 
-        # avoid continously querying Reddit
-        time.sleep(3)
+        # avoid getting rate limited
+        time.sleep(5)
     
     print("<<<SCRAPING COMPLETED>>>")
     print(f"Number of posts downloaded: {len(output_list)}")
@@ -59,19 +58,18 @@ def create_unique_list(original_list: list) -> list:
     return unique_list
 
 
-suicide_data = reddit_scrape(SUICIDE_URL, 100)
+suicide_data = reddit_scrape(SUICIDE_URL, 80)
 suicide_data_unique = create_unique_list(suicide_data)
 suicide_watch = pd.DataFrame(suicide_data_unique)
 # Add a column indicating the posts are from the SuicideWatch subreddit
 suicide_watch["is_suicide"] = 1
+suicide_watch.to_csv('suicide_watch.csv', index=False)
 
-depression_data = reddit_scrape(DEPRESSION_URL, 100)
+
+depression_data = reddit_scrape(DEPRESSION_URL, 80)
 depression_data_unique = create_unique_list(depression_data)
 depression = pd.DataFrame(depression_data_unique)
 depression["is_suicide"] = 0
-
-# save data to csv
-suicide_watch.to_csv('suicide_watch.csv', index=False)
 depression.to_csv('depression.csv', index=False)
 
 # create combined CSV with selected columns
@@ -89,3 +87,6 @@ combined_data.head()
 
 # Display the number of missing values in each column.
 combined_data.isnull().sum()
+
+# saving combined CSV
+combined_data.to_csv('suicide_vs_depression.csv', index = False)
