@@ -71,6 +71,7 @@ def getFeatures(batch_1):
     with torch.no_grad():
         last_hidden_states = model(input_ids, attention_mask=attention_mask)
     
+    # get 2D bert embeddings
     embeddings = last_hidden_states[0][:,0,:]
     return embeddings
 
