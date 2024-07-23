@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
@@ -7,9 +8,12 @@ from tensorflow.keras.layers import Dense, Input
 
 import umap
 
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
-features = pd.read_csv("data/bert-embeddings.csv")
-labels = pd.read_csv("data/train_data.csv")["is_suicide"][1:]
+features = pd.read_csv("data/guse-embeddings.csv")
+labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 
 # Dimensionality-reduction algorithms
 
@@ -28,21 +32,21 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"][1:]
 # plt.show()
 
 # 3 principal components
-pca_3d_model = PCA(n_components=3)
+pca_3d_model = PCA(n_components=4)
 low_dim_features = pca_3d_model.fit_transform(features)
 
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection='3d')
-# c=labels so that point is colored based on corresponding label
-# cmap = viridis so that uses colormap that has colors distinguishable by most people, and even when in grayscale
-scatter = ax.scatter(low_dim_features[:, 0], low_dim_features[:, 1], low_dim_features[:, 2], c=labels, alpha=0.5, cmap='viridis')
-ax.set_title('PCA: 3D Projection of Features')
-ax.set_xlabel('Principal Component 1')
-ax.set_ylabel('Principal Component 2')
-ax.set_zlabel('Principal Component 3')
-cbar = fig.colorbar(scatter, ax=ax)
-cbar.set_label('Labels')
-plt.show()
+# fig = plt.figure(figsize=(10, 8))
+# ax = fig.add_subplot(111, projection='3d')
+# # c=labels so that point is colored based on corresponding label
+# # cmap = viridis so that uses colormap that has colors distinguishable by most people, and even when in grayscale
+# scatter = ax.scatter(low_dim_features[:, 0], low_dim_features[:, 1], low_dim_features[:, 2], c=labels, alpha=0.5, cmap='viridis')
+# ax.set_title('PCA: 3D Projection of Features')
+# ax.set_xlabel('Principal Component 1')
+# ax.set_ylabel('Principal Component 2')
+# ax.set_zlabel('Principal Component 3')
+# cbar = fig.colorbar(scatter, ax=ax)
+# cbar.set_label('Labels')
+# plt.show()
 
 # Deep Autoencoder
 # encoding_dim = 2
@@ -80,7 +84,7 @@ plt.show()
 #     metric = "manhattan"
 # )
 
-# umap_features = reducer.fit_transform(features)
+# low_dim_features = reducer.fit_transform(features)
 
 # # Plot the UMAP results
 # plt.figure(figsize=(10, 8))
@@ -90,3 +94,59 @@ plt.show()
 # plt.ylabel('UMAP Component 2')
 # plt.colorbar(label='Density')
 # plt.show()
+
+
+# Clustering Algorithms
+
+# Gaussian Mixture Model (GMM)
+# n_components=2: GMM models the data as mixture of 2 different Gaussian distributions/clusters
+# covariance_type=full: gaussian component has own full covariance matrix -> most flexibility as can have unique shape & orientation
+gmm = GaussianMixture(n_components=2, covariance_type="full").fit(low_dim_features)
+gmm_predictions = gmm.predict(low_dim_features)
+probs = gmm.predict_proba(low_dim_features)
+
+# visualize GMM's proability contour
+# x, y = np.meshgrid(np.linspace(min(low_dim_features[:, 0]), max(low_dim_features[:, 0]), 100),
+#                    np.linspace(min(low_dim_features[:, 1]), max(low_dim_features[:, 1]), 100))
+# XX = np.array([x.ravel(), y.ravel()]).T
+
+# # Get probability densities from GMM
+# probs = gmm.score_samples(XX)
+# probs = probs.reshape(x.shape)
+
+# plt.contour(x, y, probs, levels=14, linewidths=1, colors='gray')
+# plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], c=gmm_predictions, cmap='viridis')
+# plt.title('GMM Clustering with Contour')
+# plt.xlabel('Feature 1')
+# plt.ylabel('Feature 2')
+# plt.show()
+
+# K-means
+# init=k-means++: initial centroids are distant from each other, speeds up convergence
+# n_init=100: algorithm runs 100 times to find best centroid seeds
+kmeans = KMeans(n_clusters=2, init="k-means++", n_init=100).fit(low_dim_features)
+kmeans_predictions = kmeans.predict(low_dim_features)
+
+# GMM & KMeans scatter plots
+# plt.figure(figsize=(12, 5))
+
+# plt.subplot(1, 2, 1)
+# plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], c=gmm_predictions, cmap='viridis')
+# plt.title('GMM Clustering')
+# plt.xlabel('Feature 1')
+# plt.ylabel('Feature 2')
+
+# plt.subplot(1, 2, 2)
+# plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], c=kmeans_predictions, cmap='viridis')
+# plt.title('KMeans Clustering')
+# plt.xlabel('Feature 1')
+# plt.ylabel('Feature 2')
+
+# plt.show()
+
+# compare GMM & KMean's clustering via silhouette score
+silhouette_gmm = silhouette_score(low_dim_features, gmm_predictions)
+print(f'Silhouette Score for GMM: {silhouette_gmm}')
+
+silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
+print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
