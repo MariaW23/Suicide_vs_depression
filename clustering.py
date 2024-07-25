@@ -1,13 +1,18 @@
+import time
+import warnings
 import pandas as pd
 import numpy as np
-from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
+
+# dimension reduction
+from sklearn.decomposition import PCA, sparse_encode
 import keras
 from tensorflow.keras.layers import Dense, Input
-
+from torch import cosine_similarity
 import umap
 
+# clustering
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
@@ -19,21 +24,21 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 
 # PCA
 # 2 principal components
-# pca_2d_model = PCA(n_components=2)
-# low_dim_features = pca_2d_model.fit_transform(features)
+pca_2d_model = PCA(n_components=2)
+low_dim_features = pca_2d_model.fit_transform(features)
 
-# # Visualize the PCA-transformed 2D features
-# plt.figure(figsize=(8, 6))
-# plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], alpha=0.5)
-# plt.title('PCA: 2D Projection of Features')
-# plt.xlabel('Principal Component 1')
-# plt.ylabel('Principal Component 2')
-# plt.grid(True)
-# plt.show()
+# Visualize the PCA-transformed 2D features
+plt.figure(figsize=(8, 6))
+plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], alpha=0.5)
+plt.title('PCA: 2D Projection of Features')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.grid(True)
+plt.show()
 
 # 3 principal components
-pca_3d_model = PCA(n_components=4)
-low_dim_features = pca_3d_model.fit_transform(features)
+# pca_3d_model = PCA(n_components=4)
+# low_dim_features = pca_3d_model.fit_transform(features)
 
 # fig = plt.figure(figsize=(10, 8))
 # ax = fig.add_subplot(111, projection='3d')
@@ -101,9 +106,9 @@ low_dim_features = pca_3d_model.fit_transform(features)
 # Gaussian Mixture Model (GMM)
 # n_components=2: GMM models the data as mixture of 2 different Gaussian distributions/clusters
 # covariance_type=full: gaussian component has own full covariance matrix -> most flexibility as can have unique shape & orientation
-gmm = GaussianMixture(n_components=2, covariance_type="full").fit(low_dim_features)
-gmm_predictions = gmm.predict(low_dim_features)
-probs = gmm.predict_proba(low_dim_features)
+# gmm = GaussianMixture(n_components=2, covariance_type="full").fit(low_dim_features)
+# gmm_predictions = gmm.predict(low_dim_features)
+# probs = gmm.predict_proba(low_dim_features)
 
 # visualize GMM's proability contour
 # x, y = np.meshgrid(np.linspace(min(low_dim_features[:, 0]), max(low_dim_features[:, 0]), 100),
@@ -124,8 +129,8 @@ probs = gmm.predict_proba(low_dim_features)
 # K-means
 # init=k-means++: initial centroids are distant from each other, speeds up convergence
 # n_init=100: algorithm runs 100 times to find best centroid seeds
-kmeans = KMeans(n_clusters=2, init="k-means++", n_init=100).fit(low_dim_features)
-kmeans_predictions = kmeans.predict(low_dim_features)
+# kmeans = KMeans(n_clusters=2, init="k-means++", n_init=100).fit(low_dim_features)
+# kmeans_predictions = kmeans.predict(low_dim_features)
 
 # GMM & KMeans scatter plots
 # plt.figure(figsize=(12, 5))
@@ -145,8 +150,44 @@ kmeans_predictions = kmeans.predict(low_dim_features)
 # plt.show()
 
 # compare GMM & KMean's clustering via silhouette score
-silhouette_gmm = silhouette_score(low_dim_features, gmm_predictions)
-print(f'Silhouette Score for GMM: {silhouette_gmm}')
+# silhouette_gmm = silhouette_score(low_dim_features, gmm_predictions)
+# print(f'Silhouette Score for GMM: {silhouette_gmm}')
 
-silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
-print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
+# silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
+# print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
+
+# Spectral clustering
+from sklearn.cluster import KMeans
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse.csgraph import laplacian
+from sklearn.preprocessing import StandardScaler
+
+if np.any(np.isnan(features)):
+    raise ValueError("NaN values found in the standardized data.")
+
+affinity_matrix = cosine_similarity(features)
+# Check for NaN values in the affinity matrix
+if np.any(np.isnan(affinity_matrix)):
+    raise ValueError("NaN values found in the affinity matrix.")
+
+laplacian_matrix = laplacian(affinity_matrix, normed=True)
+# Check for NaN values in the Laplacian matrix
+if np.any(np.isnan(laplacian_matrix)):
+    raise ValueError("NaN values found in the Laplacian matrix.")
+
+eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
+
+num_clusters = 2
+feature_matrix = eigenvectors[:, 1:num_clusters+1]
+kmeans = KMeans(n_clusters=num_clusters)
+clusters = kmeans.fit_predict(feature_matrix)
+
+silhouette_avg = silhouette_score(feature_matrix, clusters)
+print(f'Silhouette Score: {silhouette_avg}')
+
+# Plotting the clusters (if desired)
+plt.scatter(feature_matrix[:, 0], feature_matrix[:, 1], c=clusters, cmap='viridis')
+plt.xlabel('Eigenvector 1')
+plt.ylabel('Eigenvector 2')
+plt.title(f'Spectral Clustering Results\nSilhouette Score: {silhouette_avg:.2f}')
+plt.show()

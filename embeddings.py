@@ -73,7 +73,10 @@ def getFeatures(batch_1):
     
     # get 2D bert embeddings
     embeddings = last_hidden_states[0][:,0,:]
+
+    # get 3D bert embeddings
+    # embeddings = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
     return embeddings
 
 bert_embeddings = getFeatures(train_data["selftext"])
-np.savetxt("data/bert-embeddings.csv", bert_embeddings, delimiter=",")
+np.savetxt("data/bert_3d_embeddings.csv", bert_embeddings, delimiter=",")
