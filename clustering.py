@@ -15,14 +15,14 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import euclidean_distances, silhouette_score
 
 features = pd.read_csv("data/guse_embeddings.csv")
-labels = pd.read_csv("data/train_data.csv")["is_suicide"]
+labels = pd.read_csv("data/suicide_vs_depression.csv")["is_suicide"]
 
 # Dimensionality-reduction algorithms
 
 # PCA
 # 2 principal components
-# pca_2d_model = PCA(n_components=2)
-# low_dim_features = pca_2d_model.fit_transform(features)
+pca_2d_model = PCA(n_components=2)
+low_dim_features = pca_2d_model.fit_transform(features)
 
 # Visualize the PCA-transformed 2D features
 # plt.figure(figsize=(8, 6))
@@ -97,15 +97,52 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 # plt.colorbar(label='Density')
 # plt.show()
 
-
 # Clustering Algorithms
 
 # Gaussian Mixture Model (GMM)
 # n_components=2: GMM models the data as mixture of 2 different Gaussian distributions/clusters
 # covariance_type=full: gaussian component has own full covariance matrix -> most flexibility as can have unique shape & orientation
-# gmm = GaussianMixture(n_components=2, covariance_type="full").fit(low_dim_features)
-# gmm_predictions = gmm.predict(low_dim_features)
-# probs = gmm.predict_proba(low_dim_features)
+gmm = GaussianMixture(n_components=2, covariance_type="full").fit(low_dim_features)
+gmm_predictions = gmm.predict(low_dim_features)
+probs = gmm.predict_proba(low_dim_features)
+
+silhouette_gmm = silhouette_score(low_dim_features, gmm_predictions)
+print(f'Silhouette Score for GMM: {silhouette_gmm}')
+
+# Create confidence score for each predicted via getting distance from centroids
+centroids = gmm.means_
+# Euclidean distance between two points in Euclidean space is the straight-line distance between them
+distances = euclidean_distances(low_dim_features, centroids)
+
+predicted_labels = np.empty_like(labels)
+confidence_scores = np.empty(len(labels))
+
+for cluster in np.unique(gmm_predictions):
+    # Find the indices of all points in the dataset that belong to the current cluster
+    cluster_indices = np.where(gmm_predictions == cluster)[0]
+    
+    # Get original labels of the points in the current cluster
+    cluster_points_labels = labels[cluster_indices]
+    
+    # Get and assign most common label to the cluster
+    most_common_label = Counter(cluster_points_labels).most_common(1)[0][0]
+    predicted_labels[cluster_indices] = most_common_label
+    
+    # Calculate confidence scores based on distances
+    cluster_distances = distances[cluster_indices, cluster]
+    max_distance = np.max(cluster_distances)
+    
+    # Normalize distances to [0, 1] and invert to make smaller distances higher confidence
+    confidence_scores[cluster_indices] = 1 - (cluster_distances / max_distance)
+
+results_df = pd.DataFrame({
+    'Predicted Label': predicted_labels,
+    'Confidence Score': confidence_scores
+})
+
+# Write the DataFrame to a CSV file
+results_df.to_csv('data/clustering_results.csv', index=False)
+
 
 # visualize GMM's proability contour
 # x, y = np.meshgrid(np.linspace(min(low_dim_features[:, 0]), max(low_dim_features[:, 0]), 100),
@@ -146,12 +183,20 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 
 # plt.show()
 
-# compare GMM & KMean's clustering via silhouette score
-# silhouette_gmm = silhouette_score(low_dim_features, gmm_predictions)
-# print(f'Silhouette Score for GMM: {silhouette_gmm}')
-
+# KMean's clustering silhouette score
 # silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
 # print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
+
+
+# KMedoids clustering
+# from sklearn_extra.cluster import KMedoids
+# kmedoids = KMedoids(n_clusters=2, random_state=0)
+# kmedoids.fit(features)
+# labels = kmedoids.labels_
+
+# silhouette_kmedoids = silhouette_score(features, labels)
+# print(silhouette_kmedoids)
+
 
 # Spectral Clustering
 # from sklearn.metrics.pairwise import cosine_similarity
@@ -184,7 +229,6 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 # # Euclidean distance between two points in Euclidean space is the straight-line distance between them
 # distances = euclidean_distances(feature_matrix, centroids)
 
-# # Step 2: Assign labels and calculate confidence scores
 # predicted_labels = np.empty_like(labels)
 # confidence_scores = np.empty(len(labels))
 
@@ -212,7 +256,7 @@ labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 # })
 
 # # Write the DataFrame to a CSV file
-# results_df.to_csv('clustering_results.csv', index=False)
+# results_df.to_csv('data/clustering_results.csv', index=False)
 
 # silhouette_avg = silhouette_score(feature_matrix, clusters)
 # print(f'Silhouette Score: {silhouette_avg}')

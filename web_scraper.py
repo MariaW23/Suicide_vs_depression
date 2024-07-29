@@ -73,10 +73,11 @@ depression["is_suicide"] = 0
 depression.to_csv('depression.csv', index=False)
 
 # create combined CSV with selected columns
-depression = pd.read_csv('depression.csv')
-suicide_watch = pd.read_csv('suicide_watch.csv')
-dep_columns = depression[["title", "selftext", "author", "num_comments", "is_suicide", "url"]]
-sui_columns = suicide_watch[["title", "selftext", "author", "num_comments", "is_suicide", "url"]]
+
+depression = pd.read_csv('data/depression.csv')
+suicide_watch = pd.read_csv('data/suicide_watch.csv')
+dep_columns = depression[["selftext", "is_suicide"]]
+sui_columns = suicide_watch[["selftext", "is_suicide"]]
 # use axis=0 so as concatination done via adding rows, 1 would mean having side by side data structure
 # ignore index so that there's no duplicate indices
 combined_data = pd.concat([dep_columns, sui_columns], axis=0, ignore_index=True)
@@ -89,4 +90,4 @@ combined_data.head()
 combined_data.isnull().sum()
 
 # saving combined CSV
-combined_data.to_csv('suicide_vs_depression.csv', index = False)
+combined_data.to_csv('data/data.csv', index = False)
