@@ -1,40 +1,37 @@
-import time
-import warnings
+from collections import Counter
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 # dimension reduction
-from sklearn.decomposition import PCA, sparse_encode
+from sklearn.decomposition import PCA
 import keras
 from tensorflow.keras.layers import Dense, Input
-from torch import cosine_similarity
 import umap
 
 # clustering
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import euclidean_distances, silhouette_score
 
-features = pd.read_csv("data/guse-embeddings.csv")
+features = pd.read_csv("data/guse_embeddings.csv")
 labels = pd.read_csv("data/train_data.csv")["is_suicide"]
 
 # Dimensionality-reduction algorithms
 
 # PCA
 # 2 principal components
-pca_2d_model = PCA(n_components=2)
-low_dim_features = pca_2d_model.fit_transform(features)
+# pca_2d_model = PCA(n_components=2)
+# low_dim_features = pca_2d_model.fit_transform(features)
 
 # Visualize the PCA-transformed 2D features
-plt.figure(figsize=(8, 6))
-plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], alpha=0.5)
-plt.title('PCA: 2D Projection of Features')
-plt.xlabel('Principal Component 1')
-plt.ylabel('Principal Component 2')
-plt.grid(True)
-plt.show()
+# plt.figure(figsize=(8, 6))
+# plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], alpha=0.5)
+# plt.title('PCA: 2D Projection of Features')
+# plt.xlabel('Principal Component 1')
+# plt.ylabel('Principal Component 2')
+# plt.grid(True)
+# plt.show()
 
 # 3 principal components
 # pca_3d_model = PCA(n_components=4)
@@ -156,38 +153,73 @@ plt.show()
 # silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
 # print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
 
-# Spectral clustering
-from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse.csgraph import laplacian
-from sklearn.preprocessing import StandardScaler
+# Spectral Clustering
+# from sklearn.metrics.pairwise import cosine_similarity
+# from scipy.sparse.csgraph import laplacian
 
-if np.any(np.isnan(features)):
-    raise ValueError("NaN values found in the standardized data.")
+# if np.any(np.isnan(features)):
+#     raise ValueError("NaN values found in the standardized data.")
 
-affinity_matrix = cosine_similarity(features)
-# Check for NaN values in the affinity matrix
-if np.any(np.isnan(affinity_matrix)):
-    raise ValueError("NaN values found in the affinity matrix.")
+# affinity_matrix = cosine_similarity(features)
+# # Check for NaN values in the affinity matrix
+# if np.any(np.isnan(affinity_matrix)):
+#     raise ValueError("NaN values found in the affinity matrix.")
 
-laplacian_matrix = laplacian(affinity_matrix, normed=True)
-# Check for NaN values in the Laplacian matrix
-if np.any(np.isnan(laplacian_matrix)):
-    raise ValueError("NaN values found in the Laplacian matrix.")
+# laplacian_matrix = laplacian(affinity_matrix, normed=True)
+# # Check for NaN values in the Laplacian matrix
+# if np.any(np.isnan(laplacian_matrix)):
+#     raise ValueError("NaN values found in the Laplacian matrix.")
 
-eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
+# eigenvalues, eigenvectors = np.linalg.eigh(laplacian_matrix)
 
-num_clusters = 2
-feature_matrix = eigenvectors[:, 1:num_clusters+1]
-kmeans = KMeans(n_clusters=num_clusters)
-clusters = kmeans.fit_predict(feature_matrix)
+# num_clusters = 2
+# feature_matrix = eigenvectors[:, 1:num_clusters+1]
 
-silhouette_avg = silhouette_score(feature_matrix, clusters)
-print(f'Silhouette Score: {silhouette_avg}')
+# kmeans = KMeans(n_clusters=num_clusters)
+# clusters = kmeans.fit_predict(feature_matrix)
 
-# Plotting the clusters (if desired)
-plt.scatter(feature_matrix[:, 0], feature_matrix[:, 1], c=clusters, cmap='viridis')
-plt.xlabel('Eigenvector 1')
-plt.ylabel('Eigenvector 2')
-plt.title(f'Spectral Clustering Results\nSilhouette Score: {silhouette_avg:.2f}')
-plt.show()
+# # Generate new predicted labels for Spectral Clustering
+# # Create confidence score for each predicted via getting distance from centroids
+# centroids = kmeans.cluster_centers_
+# # Euclidean distance between two points in Euclidean space is the straight-line distance between them
+# distances = euclidean_distances(feature_matrix, centroids)
+
+# # Step 2: Assign labels and calculate confidence scores
+# predicted_labels = np.empty_like(labels)
+# confidence_scores = np.empty(len(labels))
+
+# for cluster in np.unique(clusters):
+#     # Find the indices of all points in the dataset that belong to the current cluster
+#     cluster_indices = np.where(clusters == cluster)[0]
+    
+#     # Get original labels of the points in the current cluster
+#     cluster_points_labels = labels[cluster_indices]
+    
+#     # Get and assign most common label to the cluster
+#     most_common_label = Counter(cluster_points_labels).most_common(1)[0][0]
+#     predicted_labels[cluster_indices] = most_common_label
+    
+#     # Calculate confidence scores based on distances
+#     cluster_distances = distances[cluster_indices, cluster]
+#     max_distance = np.max(cluster_distances)
+    
+#     # Normalize distances to [0, 1] and invert to make smaller distances higher confidence
+#     confidence_scores[cluster_indices] = 1 - (cluster_distances / max_distance)
+
+# results_df = pd.DataFrame({
+#     'Predicted Label': predicted_labels,
+#     'Confidence Score': confidence_scores
+# })
+
+# # Write the DataFrame to a CSV file
+# results_df.to_csv('clustering_results.csv', index=False)
+
+# silhouette_avg = silhouette_score(feature_matrix, clusters)
+# print(f'Silhouette Score: {silhouette_avg}')
+
+# # Plotting the clusters (if desired)
+# plt.scatter(feature_matrix[:, 0], feature_matrix[:, 1], c=clusters, cmap='viridis')
+# plt.xlabel('Eigenvector 1')
+# plt.ylabel('Eigenvector 2')
+# plt.title(f'Spectral Clustering Results\nSilhouette Score: {silhouette_avg:.2f}')
+# plt.show()
