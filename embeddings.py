@@ -33,32 +33,33 @@ data = pd.read_csv('data/data.csv')
 # Google Universal Sentence Encoder (GUSE) Transformer
 
 # get the GUSE model
-GUSE_model = hub.load("https://www.kaggle.com/models/google/universal-sentence-encoder/TensorFlow2/large/2")
+# GUSE_model = hub.load("https://www.kaggle.com/models/google/universal-sentence-encoder/TensorFlow2/large/2")
 
-# reduce the logging output
-tf.get_logger().setLevel('ERROR')
+# # reduce the logging output
+# tf.get_logger().setLevel('ERROR')
 
-# split into batches so as computer can handle it
-batch_size = 100
-GUSE_embeddings_df = pd.DataFrame()
+# # split into batches so as computer can handle it
+# batch_size = 100
+# GUSE_embeddings_df = pd.DataFrame()
 
-for start in range(0, len(data), batch_size):
-    print(f"Batch {start//batch_size}...")
-    end = min(start + batch_size, len(data))
-    batch_texts = data["selftext"][start:end]
-    batch_embeddings = GUSE_model(batch_texts)
-    if tf.is_tensor(batch_embeddings):
-        batch_embeddings = batch_embeddings.numpy()
-    batch_embeddings_df = pd.DataFrame(batch_embeddings)
-    GUSE_embeddings_df = pd.concat([GUSE_embeddings_df, batch_embeddings_df], ignore_index=True)
+# for start in range(0, len(data), batch_size):
+#     print(f"Batch {start//batch_size}...")
+#     end = min(start + batch_size, len(data))
+#     batch_texts = data["selftext"][start:end].astype(str).tolist()
+#     batch_texts_tensor = tf.convert_to_tensor(batch_texts, dtype=tf.string)
+#     batch_embeddings = GUSE_model(batch_texts_tensor)
+#     if tf.is_tensor(batch_embeddings):
+#         batch_embeddings = batch_embeddings.numpy()
+#     batch_embeddings_df = pd.DataFrame(batch_embeddings)
+#     GUSE_embeddings_df = pd.concat([GUSE_embeddings_df, batch_embeddings_df], ignore_index=True)
 
-GUSE_embeddings_df.to_csv("data/guse-embeddings.csv")
+# GUSE_embeddings_df.to_csv("data/guse_embeddings.csv")
 
 
 # BERT Transformer
-# from transformers import BertModel, BertTokenizer
+from transformers import BertModel, BertTokenizer
 
-# # initializes BERT's base-uncased style configuration (trained on lowercases for consistency, model tokenizer will convert text to lowercase before processing as well)
+# initializes BERT's base-uncased style configuration (trained on lowercases for consistency, model tokenizer will convert text to lowercase before processing as well)
 # model = BertModel.from_pretrained("google-bert/bert-base-uncased")
 # tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-uncased")
 
@@ -82,5 +83,22 @@ GUSE_embeddings_df.to_csv("data/guse-embeddings.csv")
 #     # embeddings = last_hidden_states[0].numpy() # use this line if you want the 3D BERT features 
 #     return embeddings
 
-# bert_embeddings = getFeatures(train_data["selftext"])
-# np.savetxt("data/bert_3d_embeddings.csv", bert_embeddings, delimiter=",")
+
+# Sentense BERT
+# from sentence_transformers import SentenceTransformer
+# from tqdm import tqdm
+
+# model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# batch_size = 100
+# # To catch and fill the parts that are empty as string
+# data = data["selftext"].fillna("").astype(str)
+# embeddings_list = []
+# for start in tqdm(range(0, len(data), batch_size)):
+#     end = min(start + batch_size, len(data))
+#     batch_texts = data[start:end].tolist()
+#     batch_embeddings = model.encode(batch_texts, show_progress_bar=False)
+#     embeddings_list.append(batch_embeddings)
+
+# bert_embeddings = np.vstack(embeddings_list)
+# np.savetxt("data/sbert_embeddings.csv", bert_embeddings, delimiter=",")
