@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 # dimension reduction
 from sklearn.decomposition import PCA
 import keras
+from sklearn.discriminant_analysis import StandardScaler
 from tensorflow.keras.layers import Dense, Input
 import umap
 
@@ -15,7 +16,11 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import euclidean_distances, silhouette_score
 
 features = pd.read_csv("data/sbert_embeddings.csv")
+scaler = StandardScaler()
+features = scaler.fit_transform(features)
+
 labels = pd.read_csv("data/data.csv")["is_suicide"]
+
 
 # Dimensionality-reduction algorithms
 
@@ -24,7 +29,7 @@ labels = pd.read_csv("data/data.csv")["is_suicide"]
 # pca_2d_model = PCA(n_components=2)
 # low_dim_features = pca_2d_model.fit_transform(features)
 
-# Visualize the PCA-transformed 2D features
+# # Visualize the PCA-transformed 2D features
 # plt.figure(figsize=(8, 6))
 # plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], alpha=0.5)
 # plt.title('PCA: 2D Projection of Features')
@@ -35,7 +40,7 @@ labels = pd.read_csv("data/data.csv")["is_suicide"]
 
 
 # 3 principal components
-# pca_3d_model = PCA(n_components=4)
+# pca_3d_model = PCA(n_components=3)
 # low_dim_features = pca_3d_model.fit_transform(features)
 
 # Visualize the PCA-transformed 3D features
@@ -53,42 +58,42 @@ labels = pd.read_csv("data/data.csv")["is_suicide"]
 # plt.show()
 
 # Deep Autoencoder
-encoding_dim = 2
-input_size = features.shape[1]
+# encoding_dim = 2
+# input_size = features.shape[1]
 
-input_df = Input(shape=(input_size,))
-encoded = Dense(encoding_dim, activation="relu")(input_df)
-decoded = Dense(input_size, activation="sigmoid")(encoded)
+# input_df = Input(shape=(input_size,))
+# encoded = Dense(encoding_dim, activation="relu")(input_df)
+# decoded = Dense(input_size, activation="sigmoid")(encoded)
 
-autoencoder = keras.Model(input_df, decoded)
-encoder = keras.Model(input_df, encoded)
+# autoencoder = keras.Model(input_df, decoded)
+# encoder = keras.Model(input_df, encoded)
 
-autoencoder.compile(optimizer="adam", loss="mse")
+# autoencoder.compile(optimizer="adam", loss="mse")
 
-autoencoder.summary()
+# autoencoder.summary()
 
-# features both input and output because want to compress and then reconstruct both from original input
-autoencoder.fit(features, features,
-                epochs=400,
-                batch_size=64,
-                shuffle=True,
-                validation_data=(features, features))
+# # features both input and output because want to compress and then reconstruct both from original input
+# autoencoder.fit(features, features,
+#                 epochs=400,
+#                 batch_size=64,
+#                 shuffle=True,
+#                 validation_data=(features, features))
 
-low_dim_features = encoder.predict(features)
+# low_dim_features = encoder.predict(features)
 
 # UMAP reducer
 # need to install umap-learn and umap in pip
-# reducer = umap.UMAP(
-#     # num of neighbors used for local approximations
-#     n_neighbors = 45,
-#     min_dist = 0.7,
-#     n_components = 2,
-#     # manhattan distance is sum of absolute difference of their cooridinates
-#     # better than euclidean distance in high dimensional data
-#     metric = "manhattan"
-# )
+reducer = umap.UMAP(
+    # num of neighbors used for local approximations
+    n_neighbors = 45,
+    min_dist = 0.7,
+    n_components = 2,
+    # manhattan distance is sum of absolute difference of their cooridinates
+    # better than euclidean distance in high dimensional data
+    metric = "manhattan"
+)
 
-# low_dim_features = reducer.fit_transform(features)
+low_dim_features = reducer.fit_transform(features)
 
 # Plot the UMAP results
 # plt.figure(figsize=(10, 8))
@@ -159,7 +164,7 @@ results_df.to_csv('data/clustering_results.csv', index=False)
 # kmeans = KMeans(n_clusters=2, init="k-means++", n_init=100).fit(low_dim_features)
 # kmeans_predictions = kmeans.predict(low_dim_features)
 
-# KMeans scatter plots
+# # KMeans scatter plots
 # plt.figure(figsize=(12, 5))
 # plt.scatter(low_dim_features[:, 0], low_dim_features[:, 1], c=kmeans_predictions, cmap='viridis')
 # plt.title('KMeans Clustering')
@@ -168,9 +173,10 @@ results_df.to_csv('data/clustering_results.csv', index=False)
 
 # plt.show()
 
-# KMean's clustering silhouette score
+# # KMean's clustering silhouette score
 # silhouette_kmeans = silhouette_score(low_dim_features, kmeans_predictions)
 # print(f'Silhouette Score for KMeans: {silhouette_kmeans}')
+
 
 # KMedoids clustering
 # from sklearn_extra.cluster import KMedoids
@@ -185,6 +191,9 @@ results_df.to_csv('data/clustering_results.csv', index=False)
 # Spectral Clustering
 # from sklearn.metrics.pairwise import cosine_similarity
 # from scipy.sparse.csgraph import laplacian
+
+# scaler = StandardScaler()
+# features = scaler.fit_transform(features)
 
 # if np.any(np.isnan(features)):
 #     raise ValueError("NaN values found in the standardized data.")

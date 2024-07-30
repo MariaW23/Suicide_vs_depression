@@ -18,3 +18,6 @@ predicted_train_probs = predicted_probs[:len(original_train_labels)]
 
 predicted_test_labels = predicted_labels[len(original_train_labels):]
 predicted_test_probs = predicted_probs[len(original_test_labels):]
+
+tau = 0.90
+
