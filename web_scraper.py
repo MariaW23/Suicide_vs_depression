@@ -91,27 +91,25 @@ def reddit_scrape(url, number_of_scrapes) -> list:
 # depression_data.to_csv('data/depression.csv', index=False)
 
 # cleaning data to avoid multi-lined posts
-depression_data = pd.read_csv('data/depression.csv', delimiter=',', quoting=1, encoding='utf-8')
-depression_data['selftext'] = depression_data['selftext'].str.replace('\n', '')
-depression_data.to_csv('data/depression_cleaned.csv', index=False)
+# depression_data = pd.read_csv('data/depression.csv', delimiter=',', quoting=1, encoding='utf-8')
+# depression_data['selftext'] = depression_data['selftext'].str.replace('\n', '')
+# depression_data.to_csv('data/depression_cleaned.csv', index=False)
 
 
-# # create combined CSV with selected columns
+# create combined CSV
 
-# depression = pd.read_csv('data/depression.csv')
-# suicide_watch = pd.read_csv('data/suicide_watch.csv')
-# dep_columns = depression[["selftext", "is_suicide"]]
-# sui_columns = suicide_watch[["selftext", "is_suicide"]]
-# # use axis=0 so as concatination done via adding rows, 1 would mean having side by side data structure
-# # ignore index so that there's no duplicate indices
-# combined_data = pd.concat([dep_columns, sui_columns], axis=0, ignore_index=True)
+depression = pd.read_csv('data/depression_cleaned.csv')
+suicide_watch = pd.read_csv('data/suicide_cleaned.csv')
+# use axis=0 so as concatination done via adding rows, 1 would mean having side by side data structure
+# ignore index so that there's no duplicate indices
+combined_data = pd.concat([depression, suicide_watch], axis=0, ignore_index=True)
 
-# # Fill in missing selftext values with "emptypost"
-# combined_data.fillna({"selftext": "emptypost"}, inplace=True)
-# combined_data.head()
+# Fill in missing selftext values with "emptypost"
+combined_data.fillna({"selftext": "emptypost"}, inplace=True)
+combined_data.head()
 
-# # Display the number of missing values in each column.
-# combined_data.isnull().sum()
+# Display the number of missing values in each column.
+combined_data.isnull().sum()
 
-# # saving combined CSV
-# combined_data.to_csv('data/data.csv', index = False)
+# saving combined CSV
+combined_data.to_csv('data/data.csv', index = False)
