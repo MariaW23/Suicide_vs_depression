@@ -77,23 +77,24 @@ def reddit_scrape(url, number_of_scrapes) -> list:
 # suicide_data.to_csv('data/suicide_cleaned.csv', index=False)
 
 # Get depression posts
-number_of_scrapes = 100
-depression_data = reddit_scrape(DEPRESSION_URL, number_of_scrapes)
-depression_data = pd.DataFrame(depression_data)
-# Add a column indicating the posts are from the SuicideWatch subreddit
-depression_data["is_suicide"] = 0
+# number_of_scrapes = 100
+# depression_data = reddit_scrape(DEPRESSION_URL, number_of_scrapes)
+# depression_data = pd.DataFrame(depression_data)
+# # Add a column indicating the posts are from the SuicideWatch subreddit
+# depression_data["is_suicide"] = 0
 
-# raw data
-depression_data.to_csv('data/depression_raw.csv', index=False)
+# # raw data
+# depression_data.to_csv('data/depression_raw.csv', index=False)
 
-# data with columns needed
-depression_data = depression_data[["selftext", "is_suicide"]]
-depression_data.to_csv('data/depression.csv', index=False)
+# # data with columns needed
+# depression_data = depression_data[["selftext", "is_suicide"]]
+# depression_data.to_csv('data/depression.csv', index=False)
 
 # cleaning data to avoid multi-lined posts
-depression_data = pd.read_csv('data/suicide.csv', delimiter=',', quoting=1, encoding='utf-8')
+depression_data = pd.read_csv('data/depression.csv', delimiter=',', quoting=1, encoding='utf-8')
 depression_data['selftext'] = depression_data['selftext'].str.replace('\n', '')
 depression_data.to_csv('data/depression_cleaned.csv', index=False)
+
 
 # # create combined CSV with selected columns
 
