@@ -150,8 +150,8 @@ for cluster in np.unique(gmm_predictions):
     confidence_scores[cluster_indices] = 1 - (cluster_distances / max_distance)
 
 results_df = pd.DataFrame({
-    'Predicted Label': predicted_labels,
-    'Confidence Score': confidence_scores
+    'predictions': predicted_labels,
+    'confidence': confidence_scores
 })
 
 # Write the DataFrame to a CSV file
